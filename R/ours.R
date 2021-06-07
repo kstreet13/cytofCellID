@@ -1,15 +1,14 @@
 
-
 # things we want to identify
 
 # maybe: zeros for GDPs    # easy
-# beads                    # 
-# bead+cell doublets       # 
-# debris
-# doublets
+# beads                    # easy
+# bead+cell doublets       # fairly easy
+# debris                   # harder
+# doublets                 # medium, but not sure if we want to remove them all
 
-require(CATALYST)
-fname <- 'data/Bagwell/REP_1_deid.fcs'
+source('R/utils.R')
+fname <- '../ctc/data/Bagwell/REP_1_deid.fcs'
 sce <- prepData(fname)
 out <- rep('cell', ncol(sce))
 
@@ -29,65 +28,6 @@ out[int_colData(sce)$Center == 0 |
 
 # STEP 2: FIND BEADS & BEAD+CELL DOUBLETS
 # initialize with peak finder, then SVM
-find_groups <- function(x){
-    d <- density(x, adjust = 2)
-    # initial peaks:
-    #  (1) higher than it's 10 neighbors
-    #  (2) at leat 1% of the maximum peak height
-    peakTF <- sapply(1:length(d$y), function(i){
-        neighbors <- c((i-5):(i-1), (i+1):(i+5))
-        neighbors <- neighbors[neighbors %in% 1:length(d$y)]
-        
-        return(all(d$y[i] > d$y[neighbors]) &
-                   d$y[i] > .01*max(d$y))
-    })
-    peaks <- which(peakTF)
-    # find valleys (lowpoints between peaks)
-    if(sum(peakTF) > 1){
-        valleys <- sapply(1:(sum(peakTF)-1), function(i){
-            p1 <- which(peakTF)[i]
-            p2 <- which(peakTF)[i+1]
-            btwn <- p1:p2
-            return(btwn[which.min(d$y[btwn])])
-        })
-    }
-    # peak filtering
-    # remove peak if not >120% of both nearby valleys
-    for(ii in 1:length(peaks)){
-        ht <- d$y[peaks[ii]]
-        if(ii == 1){
-            lv <- 1
-        }else{
-            lv <- valleys[ii-1]
-        }
-        if(ii == length(peaks)){
-            rv <- length(d$x)
-        }else{
-            rv <- valleys[ii]
-        }
-        lv <- d$y[lv]
-        rv <- d$y[rv]
-        if(ht < 1.2*lv | ht < 1.2*rv){
-            peakTF[peaks[ii]] <- FALSE
-            print(paste('removing',ii))
-        }
-    }
-    peaks <- which(peakTF)
-    # re-find valleys
-    if(sum(peakTF) > 1){
-        valleys <- sapply(1:(sum(peakTF)-1), function(i){
-            p1 <- which(peakTF)[i]
-            p2 <- which(peakTF)[i+1]
-            btwn <- p1:p2
-            return(btwn[which.min(d$y[btwn])])
-        })
-        out <- cut(x, breaks = c(-Inf, d$x[valleys], Inf))
-    }else{
-        out <- factor(rep(1, length(x)))
-    }
-    levels(out) <- 1:length(peaks)
-    return(out)
-}
 
 isBeadMat <- sapply(bead_channels, function(ch){
     x <- assay(sce,'exprs')[ch,]
@@ -140,4 +80,34 @@ out[subset[mc$classification == doubletclus]] <- 'beadCell'
 
 
 
+# STEP ?: IDENTIFY DOUBLETS (CELL + CELL)
 
+#       Center: low+high bimodal   
+#       Offset: LOW   
+#        Width: low-ish    
+#     Residual: HIGH 
+# Event_length: HIGH 
+#          DNA: HIGH
+
+
+hist(tech[which(out=='cell'),'Offset'])
+hist(tech[which(out=='cell'),'Width'])
+hist(tech[which(out=='cell'),'Center'])
+hist(tech[which(out=='cell'),'Residual'])
+hist(tech[which(out=='cell'),'DNA1'], breaks = 50)
+
+foo <- tech[,'Width'] / tech[,'Event_length']
+
+ind <- sample(which(out == 'cell'), 5000)
+
+pairs(cbind(foo, tech[,c('Width','Event_length','DNA1')])[ind,], col = rgb(0,0,0,.1))
+
+
+# STEP ?: IDENTIFY DEBRIS
+
+#       Center: LOW
+#       Offset: highly variable
+#        Width: low-ish
+#     Residual: high-ish 
+# Event_length: LOW
+#          DNA: LOW

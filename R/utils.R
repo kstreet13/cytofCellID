@@ -1,3 +1,5 @@
+require(CATALYST)
+
 # used by Bagwell, us
 find_groups <- function(x){
     d <- density(x, adjust = 2)

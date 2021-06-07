@@ -1,8 +1,8 @@
 
 # this is just a attempted re-creation of the Bagwell method
 
-require(CATALYST)
-require(SingleCellExperiment)
+
+source('R/utils.R')
 fname <- 'data/1_U20S (RKH20201118).fcs'
 fname <- 'data/Bagwell/REP_1_deid.fcs'
 raw <- prepData(fname)
