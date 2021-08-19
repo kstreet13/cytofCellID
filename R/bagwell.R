@@ -2,10 +2,10 @@
 # this is just a attempted re-creation of the Bagwell method
 
 
-source('R/utils.R')
-fname <- 'data/1_U20S (RKH20201118).fcs'
-fname <- 'data/Bagwell/REP_1_deid.fcs'
-raw <- prepData(fname)
+# source('R/utils.R')
+# #fname <- 'data/1_U20S (RKH20201118).fcs'
+# fname <- '../ctc/data/Bagwell/REP_1_deid.fcs'
+# sce <- prepData(fname)
 
 
 ##########################
@@ -198,5 +198,5 @@ runBagwell <- function(sce, plot = FALSE){
     return(list(keep = keep, tstats = tstats))
 }
 
-res <- runBagwell(raw)
+# res <- runBagwell(sce)
 

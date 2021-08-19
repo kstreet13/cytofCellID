@@ -1,0 +1,50 @@
+---
+title: "CYToF QC"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
+source('R/nnmap.R')
+printnames <- c('Whole Cells','Debris','Doublets','Beads','GDP Failures')
+# assume 'out' exists, contains:
+# "cell" "debris" "GDPzero" "doublet" "bead"
+colpal <- c(brewer.pal(9,'Set1')[2],
+            brewer.pal(8,'Set2')[1],
+            brewer.pal(10,'Paired')[10],
+            brewer.pal(9,'Set1')[5],
+            brewer.pal(9,'Set1')[1])
+```
+
+```{r umap, fig.width=5, fig.height=4, echo=FALSE}
+# umap
+ind <- sample(length(out), 1000)
+RD <- uwot::umap(tech[ind,])
+
+layout(matrix(c(1,1,1,1,2),nrow=1))
+plot(RD, col = alpha(colpal[out[ind]], alpha = .5), asp=1, pch=16, cex = .6, main = 'Technical UMAP', axes=FALSE)
+box(); axis(1, cex.axis=.75, padj = -1.5); axis(2, cex.axis=.75, hadj = .5)
+op <- par(mar=rep(0,4))
+plot.new()
+legend('left', legend = printnames, pch = 16, col = colpal, bty = 'n')
+par(op)
+layout(1)
+```
+
+This UMAP plot is based on the Gaussian Discrimination Parameters and a subset of channels (such as Bead and DNA channels) that we expect to be consistent for all live, intact, single cells. It is intended to cluster into technical populations, such as "doublets," "beads," and "debris." While there may be some biologically meaningful variation evident in the plot, that is not its main purpose.
+
+
+```{r barplot, fig.width=3, fig.height=3, echo=FALSE}
+barplot(table(out)/length(out), col = colpal, ylim=0:1, main = 'Proportions', names = printnames, cex.names = .75, cex.axis = .75)
+grid(nx=NA,ny=NULL)
+barplot(table(out)/length(out), col = colpal, add = TRUE, names = '',axes=FALSE)
+```
+
+```{r table, echo=FALSE}
+tab <- data.frame(t(as.matrix(table(out))))
+tab$total <- length(out)
+names(tab) <- c('Whole Cells','Debris','Doublets','Beads','GDP Failures', 'TOTAL')
+print(tab)
+```
+
