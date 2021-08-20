@@ -14,7 +14,8 @@
 # Order (from Bagwell):
 # Beads, Offset, Width, Center, DNA1, Residual, Event_length, Live/Dead, DNA2
 
-runBagwell <- function(sce, plot = FALSE){
+runBagwell <- function(sce, plot = FALSE, datatype = c('Bagwell','Crompton')){
+    datatype <- match.arg(datatype)
     # Beads, Offset, Width, Center, DNA1, Residual, Event_length, Live/Dead, DNA2
     
     # set up T stats matrix
@@ -23,7 +24,11 @@ runBagwell <- function(sce, plot = FALSE){
     keep <- rep(TRUE, ncol(sce))
     
     ### Beads ###
-    x <- assay(sce,'exprs')['Bead',]
+    if(datatype == 'Crompton'){
+        x <- assay(sce,'exprs')['Beads',]   
+    }else{
+        x <- assay(sce,'exprs')['Bead',]
+    }
     if(plot){
         #layout(matrix(1:2, nrow=1))
         d1 <- density(x[which(keep)])
@@ -158,7 +163,12 @@ runBagwell <- function(sce, plot = FALSE){
     
     
     ### Viability ###
-    x <- assay(sce,'exprs')['Live_Dead',]
+    if(datatype == 'Crompton'){
+        x <- assay(sce,'exprs')[62,] # reference by number because there are two "Viability" channels
+    }else{
+        x <- assay(sce,'exprs')['Live_Dead',]
+    }
+
     if(plot){
         d1 <- density(x[which(keep)])
         plot(d1$x, d1$y, type='l', main = "Viability - Before", xlab = '', ylab = '')

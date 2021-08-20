@@ -6,14 +6,24 @@
 
 
 
-runSSSVM <- function(sce){
+runSSSVM <- function(sce, datatype = c('Bagwell','Crompton')){
+    datatype <- match.arg(datatype)
     out <- rep('cell', ncol(sce))
     
     # setup
-    bead_channels <- grep('Bead', rownames(sce))
-    tech <- t(assay(sce,'exprs')[bead_channels,])
-    tech <- cbind(tech, t(assay(sce,'exprs')[c('DNA1','DNA2','Live_Dead'),]))
-    tech <- cbind(tech, log1p(as.matrix(int_colData(sce)[,c('Event_length','Center','Offset','Width','Residual')])))
+    if(datatype == 'Crompton'){
+        bead_channels <- c(19, 21, 30, 32, 54)
+        tech <- t(assay(sce,'exprs')[bead_channels,])
+        tech_bead_channels <- 1:ncol(tech)
+        tech <- cbind(tech, t(assay(sce,'exprs')[rownames(sce) %in% c('DNA1','DNA2','Viability'),])) # 'VeriCells' ??
+        tech <- cbind(tech, log1p(as.matrix(int_colData(sce)[,c('Event_length','Center','Offset','Width','Residual')])))
+    }else{
+        bead_channels <- grep('Bead', rownames(sce))
+        tech <- t(assay(sce,'exprs')[bead_channels,])
+        tech_bead_channels <- 1:ncol(tech)
+        tech <- cbind(tech, t(assay(sce,'exprs')[c('DNA1','DNA2','Live_Dead'),]))
+        tech <- cbind(tech, log1p(as.matrix(int_colData(sce)[,c('Event_length','Center','Offset','Width','Residual')])))
+    }
     
     # we need fast, approximate KNN
     s.tech <- scale(tech)
@@ -41,7 +51,7 @@ runSSSVM <- function(sce){
     
     # approximate the label
     {
-        isBeadMat <- sapply(grep('Bead', colnames(X)), function(col){
+        isBeadMat <- sapply(tech_bead_channels, function(col){
             x <- X[,col]
             g <- find_groups(x[x>0])
             mns <- by(x[x>0], g, mean)
