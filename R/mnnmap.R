@@ -1,12 +1,12 @@
 
 
 # source('R/utils.R')
-# fname <- '../ctc/data/Bagwell/REP_1_deid.fcs'
+# fname <- '../ctc/data/Crompton/U2OS_NT-1_GFP_Spike_NORMAL_01_1.fcs'
 # sce <- prepData(fname)
 
 
 
-runNNSVM <- function(sce, secondguess = FALSE, datatype = c('Bagwell','Crompton')){
+runMNNSVM <- function(sce, datatype = c('Bagwell','Crompton')){
     datatype <- match.arg(datatype)
     out <- rep('cell', ncol(sce))
     
@@ -29,8 +29,13 @@ runNNSVM <- function(sce, secondguess = FALSE, datatype = c('Bagwell','Crompton'
     s.tech <- scale(tech)
     require(BiocNeighbors)
     k.dex <- buildKmknn(s.tech) 
-    knn <- findKNN(s.tech, 10, BNINDEX=k.dex)
-    
+    knn <- findKNN(s.tech, 20, BNINDEX=k.dex)
+    mnn <- knn$index
+    for(i in 1:ncol(sce)){
+        x <- knn$index[i,]
+        keep <- rowMeans(knn$index[x,] == i) > 0
+        mnn[i, !keep] <- NA
+    }
     
     
     # STEP 1: MARK GDP ZEROS
@@ -69,7 +74,7 @@ runNNSVM <- function(sce, secondguess = FALSE, datatype = c('Bagwell','Crompton'
     
     # pick events near the boundary
     {
-        mismatch <- matrix(init[knn$index[which(out=='cell'),]], ncol = 10)
+        mismatch <- matrix(init[mnn[which(out=='cell'),]], ncol = 20)
         mismatch[init, ] <- !mismatch[init, ]
         mismatch[is.na(mismatch)] <- FALSE
         poss.ind <- which(rowSums(mismatch) >= 1)
@@ -85,24 +90,6 @@ runNNSVM <- function(sce, secondguess = FALSE, datatype = c('Bagwell','Crompton'
         svmfit <- svm(x = X[ind,], y = as.numeric(init[ind]),
                       kernel = "linear", scale = FALSE)
         pred <- predict(svmfit, X)
-        if(secondguess){
-            # re-pick
-            {
-                init <- as.logical(round(pred))
-                mismatch <- matrix(init[knn$index[which(out=='cell'),]], ncol = 10)
-                mismatch[init, ] <- !mismatch[init, ]
-                mismatch[is.na(mismatch)] <- FALSE
-                poss.ind <- which(rowSums(mismatch) >= 2)
-                # ~ equal representation
-                poss.wt <- (1000/table(init[poss.ind]))[1+init[poss.ind]]
-                ind <- sample(poss.ind, 4000, prob = poss.wt)
-            }
-            pred1 <- pred[ind]
-            svmfit2 <- svm(x = X[ind,], y = round(pred1),
-                           kernel = "linear", scale = FALSE)
-            #pred2 <- predict(svmfit2, X[ind,])
-            pred <- predict(svmfit2, X)
-        }
     }
     
     # update labels
@@ -130,7 +117,7 @@ runNNSVM <- function(sce, secondguess = FALSE, datatype = c('Bagwell','Crompton'
     
     # pick events near the boundary
     {
-        mismatch <- matrix(init[knn$index[which(out=='cell'),]], ncol = 10)
+        mismatch <- matrix(init[mnn[which(out=='cell'),]], ncol = 20)
         mismatch[init, ] <- !mismatch[init, ]
         mismatch[is.na(mismatch)] <- FALSE
         poss.ind <- which(rowSums(mismatch) >= 2)
@@ -146,24 +133,6 @@ runNNSVM <- function(sce, secondguess = FALSE, datatype = c('Bagwell','Crompton'
         svmfit <- svm(x = X[ind,], y = as.numeric(init[ind]),
                       kernel = "linear", scale = FALSE)
         pred <- predict(svmfit, X)
-        if(secondguess){
-            # re-pick
-            {
-                init <- as.logical(round(pred))
-                mismatch <- matrix(init[knn$index[which(out=='cell'),]], ncol = 10)
-                mismatch[init, ] <- !mismatch[init, ]
-                mismatch[is.na(mismatch)] <- FALSE
-                poss.ind <- which(rowSums(mismatch) >= 2)
-                # ~ equal representation
-                poss.wt <- (1000/table(init[poss.ind]))[1+init[poss.ind]]
-                ind <- sample(poss.ind, 4000, prob = poss.wt)
-            }
-            pred1 <- pred[ind]
-            svmfit2 <- svm(x = X[ind,], y = round(pred1),
-                           kernel = "linear", scale = FALSE)
-            #pred2 <- predict(svmfit2, X[ind,])
-            pred <- predict(svmfit2, X)
-        }
     } # pred
     
     # update labels
@@ -211,7 +180,7 @@ runNNSVM <- function(sce, secondguess = FALSE, datatype = c('Bagwell','Crompton'
     
     # pick events near the boundary
     {
-        mismatch <- matrix(init[knn$index[which(out=='cell'),]], ncol = 10)
+        mismatch <- matrix(init[mnn[which(out=='cell'),]], ncol = 20)
         mismatch[init, ] <- !mismatch[init, ]
         mismatch[is.na(mismatch)] <- FALSE
         poss.ind <- which(rowSums(mismatch) >= 2)
@@ -227,24 +196,6 @@ runNNSVM <- function(sce, secondguess = FALSE, datatype = c('Bagwell','Crompton'
         svmfit <- svm(x = X[ind,], y = as.numeric(init[ind]),
                       kernel = "linear", scale = FALSE)
         pred <- predict(svmfit, X)
-        if(secondguess){
-            # re-pick
-            {
-                init <- as.logical(round(pred))
-                mismatch <- matrix(init[knn$index[which(out=='cell'),]], ncol = 10)
-                mismatch[init, ] <- !mismatch[init, ]
-                mismatch[is.na(mismatch)] <- FALSE
-                poss.ind <- which(rowSums(mismatch) >= 2)
-                # ~ equal representation
-                poss.wt <- (1000/table(init[poss.ind]))[1+init[poss.ind]]
-                ind <- sample(poss.ind, 4000, prob = poss.wt)
-            }
-            pred1 <- pred[ind]
-            svmfit2 <- svm(x = X[ind,], y = round(pred1),
-                           kernel = "linear", scale = FALSE)
-            #pred2 <- predict(svmfit2, X[ind,])
-            pred <- predict(svmfit2, X)
-        }
     } # pred
     
     # update labels
@@ -258,8 +209,7 @@ runNNSVM <- function(sce, secondguess = FALSE, datatype = c('Bagwell','Crompton'
 
 
 
-# out1 <- runNNSVM(sce)
-# out2 <- runNNSVM(sce, secondguess = TRUE)
+# out <- runMNNSVM(sce)
 
 #barplot(table(out))
 

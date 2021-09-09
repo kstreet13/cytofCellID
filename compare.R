@@ -1,5 +1,5 @@
 
-fname <- '../ctc/data/20210427 GFP staining protocol determination U20S NT-1GFP & EW8 GFP w ctrls - Normalized/EW8_01_1 (1).fcs'
+fname <- '../ctc/data/Crompton/U2OS_NT-1_GFP_Spike_NORMAL_01_1.fcs'
 datatype <- 'Crompton' # 'Bagwell'
 
 base <- basename(fname)
@@ -16,7 +16,7 @@ sce <- prepData(fname)
 # setup
 
 if(datatype == 'Crompton'){
-    bead_channels <- c(19, 21, 30, 32, 54)
+    bead_channels <- c(19, 30, 32, 44, 54) # "dvs" from normCytof
     tech <- t(assay(sce,'exprs')[bead_channels,])
     tech_bead_channels <- 1:ncol(tech)
     tech <- cbind(tech, t(assay(sce,'exprs')[rownames(sce) %in% c('DNA1','DNA2','Viability'),])) # 'VeriCells' ??
@@ -31,7 +31,7 @@ if(datatype == 'Crompton'){
 umap <- uwot::umap(tech)
 
 
-t1 <- system.time(catalyst <- runCATALYST(sce, datatype = datatype))
+t1 <- system.time(catalyst <- runCATALYST(sce))
 t2 <- system.time(bagwell <- runBagwell(sce, datatype = datatype))
 t3 <- system.time(nnsvm <- runNNSVM(sce, datatype = datatype))
 t4 <- system.time(nnsvm2 <- runNNSVM(sce, secondguess = TRUE, datatype = datatype))

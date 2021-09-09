@@ -15,7 +15,7 @@ runSSSVM <- function(sce, datatype = c('Bagwell','Crompton')){
         bead_channels <- c(19, 21, 30, 32, 54)
         tech <- t(assay(sce,'exprs')[bead_channels,])
         tech_bead_channels <- 1:ncol(tech)
-        tech <- cbind(tech, t(assay(sce,'exprs')[rownames(sce) %in% c('DNA1','DNA2','Viability'),])) # 'VeriCells' ??
+        tech <- cbind(tech, t(assay(sce,'exprs')[rownames(sce) %in% c('DNA1','DNA2','Viability','VeriCells'),])) # 'VeriCells' ??
         tech <- cbind(tech, log1p(as.matrix(int_colData(sce)[,c('Event_length','Center','Offset','Width','Residual')])))
     }else{
         bead_channels <- grep('Bead', rownames(sce))
