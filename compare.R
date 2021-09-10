@@ -35,10 +35,11 @@ t1 <- system.time(catalyst <- runCATALYST(sce))
 t2 <- system.time(bagwell <- runBagwell(sce, datatype = datatype))
 t3 <- system.time(nnsvm <- runNNSVM(sce, datatype = datatype))
 t4 <- system.time(nnsvm2 <- runNNSVM(sce, secondguess = TRUE, datatype = datatype))
-t5 <- system.time(sssvm <- runSSSVM(sce, datatype = datatype))
+t5 <- system.time(mnnsvm <- runMNNSVM(sce, datatype = datatype))
+#t5 <- system.time(sssvm <- runSSSVM(sce, datatype = datatype))
 
-res <- list(umap = umap, times = list(catalyst = t1, bagwell = t2, nnsvm = t3, nnsvm2 = t4, sssvm = t5),
-            labels = data.frame(catalyst, bagwell, nnsvm, nnsvm2, sssvm))
+res <- list(umap = umap, times = list(catalyst = t1, bagwell = t2, nnsvm = t3, nnsvm2 = t4, mnnsvm = t5),
+            labels = data.frame(catalyst, bagwell, nnsvm, nnsvm2, mnnsvm))
 
 saveRDS(res, file=paste0('../ctc/RESULTS_',base,'.rds'))
 

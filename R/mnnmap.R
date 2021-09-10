@@ -54,7 +54,8 @@ runMNNSVM <- function(sce, datatype = c('Bagwell','Crompton')){
     #####################
     ### STEP 2: BEADS ###
     #####################
-    X <- s.tech[which(out == 'cell'), ]
+    unclassified.ind <- which(out == 'cell')
+    X <- s.tech[unclassified.ind, ]
     
     # approximate the label (init)
     {
@@ -69,38 +70,40 @@ runMNNSVM <- function(sce, datatype = c('Bagwell','Crompton')){
             }
             return(out)
         })
-        init <- rowMeans(isBeadMat) > 0.5
+        init <- rep(FALSE, ncol(sce))
+        init[unclassified.ind] <- rowMeans(isBeadMat) > 0.5
     }
     
     # pick events near the boundary
     {
-        mismatch <- matrix(init[mnn[which(out=='cell'),]], ncol = 20)
+        mismatch <- matrix(init[mnn], ncol = ncol(mnn))
         mismatch[init, ] <- !mismatch[init, ]
         mismatch[is.na(mismatch)] <- FALSE
         poss.ind <- which(rowSums(mismatch) >= 1)
         # ~ equal representation
         poss.wt <- (1000/table(init[poss.ind]))[1+init[poss.ind]]
-        ind <- sample(poss.ind, 4000, prob = poss.wt)
+        ind <- sample(poss.ind, min(c(4000, length(poss.ind))), prob = poss.wt)
     }
     
     
     # SVM on those events
     {
         require(e1071)
-        svmfit <- svm(x = X[ind,], y = as.numeric(init[ind]),
+        svmfit <- svm(x = s.tech[ind,], y = factor(init[ind]),
                       kernel = "linear", scale = FALSE)
-        pred <- predict(svmfit, X)
+        pred <- predict(svmfit, s.tech[unclassified.ind, ])
     }
     
     # update labels
-    out[which(out == 'cell')][which(as.logical(round(pred)))] <- 'bead'
+    out[unclassified.ind][as.logical(pred)] <- 'bead'
     
     
     
     ########################
     ### STEP 3: DOUBLETS ###
     ########################
-    X <- s.tech[which(out == 'cell'), ]
+    unclassified.ind <- which(out == 'cell')
+    X <- s.tech[unclassified.ind, ]
     
     # approximate the label (init)
     {
@@ -112,37 +115,39 @@ runMNNSVM <- function(sce, datatype = c('Bagwell','Crompton')){
             .5 * X[,'Width']
         g <- find_groups(doubletscore)
         doubletclus <- max(as.numeric(levels(g)))
-        init <- g == doubletclus
+        init <- rep(FALSE, ncol(sce))
+        init[unclassified.ind] <- g == doubletclus
     } # init
     
     # pick events near the boundary
     {
-        mismatch <- matrix(init[mnn[which(out=='cell'),]], ncol = 20)
+        mismatch <- matrix(init[mnn], ncol = ncol(mnn))
         mismatch[init, ] <- !mismatch[init, ]
         mismatch[is.na(mismatch)] <- FALSE
-        poss.ind <- which(rowSums(mismatch) >= 2)
+        poss.ind <- which(rowSums(mismatch) >= 1)
         # ~ equal representation
         poss.wt <- (1000/table(init[poss.ind]))[1+init[poss.ind]]
-        ind <- sample(poss.ind, 4000, prob = poss.wt)
+        ind <- sample(poss.ind, min(c(4000, length(poss.ind))), prob = poss.wt)
     } # ind
     
     
     # SVM on those events
     {
         require(e1071)
-        svmfit <- svm(x = X[ind,], y = as.numeric(init[ind]),
+        svmfit <- svm(x = s.tech[ind,], y = factor(init[ind]),
                       kernel = "linear", scale = FALSE)
-        pred <- predict(svmfit, X)
+        pred <- predict(svmfit, s.tech[unclassified.ind, ])
     } # pred
     
     # update labels
-    out[which(out == 'cell')][which(as.logical(round(pred)))] <- 'doublet'
+    out[unclassified.ind][as.logical(pred)] <- 'doublet'
     
     
     ######################
     ### STEP 4: DEBRIS ###
     ######################
-    X <- s.tech[which(out == 'cell'), ]
+    unclassified.ind <- which(out == 'cell')
+    X <- s.tech[unclassified.ind, ]
     
     # approximate the label (init)
     {
@@ -175,31 +180,32 @@ runMNNSVM <- function(sce, datatype = c('Bagwell','Crompton')){
         }
         
         debrisclus <- which.max(c(m1,m2))
-        init <- g == debrisclus
+        init <- rep(FALSE, ncol(sce))
+        init[unclassified.ind] <- g == debrisclus
     } # init
     
     # pick events near the boundary
     {
-        mismatch <- matrix(init[mnn[which(out=='cell'),]], ncol = 20)
+        mismatch <- matrix(init[mnn], ncol = ncol(mnn))
         mismatch[init, ] <- !mismatch[init, ]
         mismatch[is.na(mismatch)] <- FALSE
-        poss.ind <- which(rowSums(mismatch) >= 2)
+        poss.ind <- which(rowSums(mismatch) >= 1)
         # ~ equal representation
         poss.wt <- (1000/table(init[poss.ind]))[1+init[poss.ind]]
-        ind <- sample(poss.ind, 4000, prob = poss.wt)
+        ind <- sample(poss.ind, min(c(4000, length(poss.ind))), prob = poss.wt)
     } # ind
     
     
     # SVM on those events
     {
         require(e1071)
-        svmfit <- svm(x = X[ind,], y = as.numeric(init[ind]),
+        svmfit <- svm(x = s.tech[ind,], y = factor(init[ind]),
                       kernel = "linear", scale = FALSE)
-        pred <- predict(svmfit, X)
+        pred <- predict(svmfit, s.tech[unclassified.ind, ])
     } # pred
     
     # update labels
-    out[which(out == 'cell')][which(as.logical(round(pred)))] <- 'debris'
+    out[unclassified.ind][as.logical(pred)] <- 'debris'
     
     out <- factor(out, levels = c("cell","debris","doublet","bead","GDPzero"))
     
