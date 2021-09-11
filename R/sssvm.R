@@ -47,7 +47,8 @@ runSSSVM <- function(sce, datatype = c('Bagwell','Crompton')){
     #####################
     ### STEP 2: BEADS ###
     #####################
-    X <- s.tech[which(out == 'cell'), ]
+    unclassified.ind <- which(out == 'cell')
+    X <- s.tech[unclassified.ind, ]
     
     # approximate the label
     {
@@ -62,15 +63,16 @@ runSSSVM <- function(sce, datatype = c('Bagwell','Crompton')){
             }
             return(out)
         })
-        init <- rowMeans(isBeadMat) > 0.5
+        init <- rep(FALSE, ncol(sce))
+        init[unclassified.ind] <- rowMeans(isBeadMat) > 0.5
     } # init
     
     # pick "true" events (all "neighbors of neighbors" share the same label)
     {
-        mismatch <- matrix(init[knn$index[which(out=='cell'),]], ncol = 10)
+        mismatch <- matrix(init[knn$index], ncol = 10)
         mismatch[init, ] <- !mismatch[init, ]
         mismatch[is.na(mismatch)] <- FALSE
-        neighbormismatch <- matrix(rowMeans(mismatch)[knn$index[which(out=='cell'),]], ncol = 10)
+        neighbormismatch <- matrix(rowMeans(mismatch)[knn$index], ncol = 10)
         neighbormismatch[is.na(neighbormismatch)] <- 0
         #ind.label <- which(rowSums(neighbormismatch) == 0)
         ind.unlab <- which(rowSums(neighbormismatch) != 0)
@@ -82,23 +84,26 @@ runSSSVM <- function(sce, datatype = c('Bagwell','Crompton')){
         library(e1071)
         ytrain <- as.integer(init)
         ytrain[ind.unlab] <- NA
-        ssvm <- selfTraining(x=X, y = ytrain, x.inst = TRUE, learner = svm,
+        ssvm <- selfTraining(x = s.tech[unclassified.ind, ], 
+                             y = ytrain[unclassified.ind], 
+                             x.inst = TRUE, learner = svm,
                              learner.pars =list(kernel ="linear", scale = FALSE, probability = TRUE),
                              pred = function(m, x){
                                  attr(predict(m, x, probability = TRUE), "probabilities")
                              })
-        pred <- predict(ssvm, X)
+        pred <- predict(ssvm, s.tech[unclassified.ind, ])
     } # pred
     
     # update labels
-    out[which(out == 'cell')][which(as.logical(round(as.numeric(as.character(pred)))))] <- 'bead'
+    out[unclassified.ind][which(as.logical(round(as.numeric(as.character(pred)))))] <- 'bead'
     
     
     
     ########################
     ### STEP 3: DOUBLETS ###
     ########################
-    X <- s.tech[which(out == 'cell'), ]
+    unclassified.ind <- which(out == 'cell')
+    X <- s.tech[unclassified.ind, ]
     
     # approximate the label
     {
@@ -110,15 +115,16 @@ runSSSVM <- function(sce, datatype = c('Bagwell','Crompton')){
             .5 * X[,'Width']
         g <- find_groups(doubletscore)
         doubletclus <- max(as.numeric(levels(g)))
-        init <- g == doubletclus
+        init <- rep(FALSE, ncol(sce))
+        init[unclassified.ind] <- g == doubletclus
     } # init
     
     # pick "true" events (all "neighbors of neighbors" share the same label)
     {
-        mismatch <- matrix(init[knn$index[which(out=='cell'),]], ncol = 10)
+        mismatch <- matrix(init[knn$index], ncol = 10)
         mismatch[init, ] <- !mismatch[init, ]
         mismatch[is.na(mismatch)] <- FALSE
-        neighbormismatch <- matrix(rowMeans(mismatch)[knn$index[which(out=='cell'),]], ncol = 10)
+        neighbormismatch <- matrix(rowMeans(mismatch)[knn$index], ncol = 10)
         neighbormismatch[is.na(neighbormismatch)] <- 0
         #ind.label <- which(rowSums(neighbormismatch) == 0)
         ind.unlab <- which(rowSums(neighbormismatch) != 0)
@@ -130,23 +136,26 @@ runSSSVM <- function(sce, datatype = c('Bagwell','Crompton')){
         library(e1071)
         ytrain <- as.integer(init)
         ytrain[ind.unlab] <- NA
-        ssvm <- selfTraining(x=X, y = ytrain, x.inst = TRUE, learner = svm,
+        ssvm <- selfTraining(x = s.tech[unclassified.ind, ], 
+                             y = ytrain[unclassified.ind], 
+                             x.inst = TRUE, learner = svm,
                              learner.pars =list(kernel ="linear", scale = FALSE, probability = TRUE),
                              pred = function(m, x){
                                  attr(predict(m, x, probability = TRUE), "probabilities")
                              })
-        pred <- predict(ssvm, X)
+        pred <- predict(ssvm, s.tech[unclassified.ind, ])
     } # pred
     
     
     # update labels
-    out[which(out == 'cell')][which(as.logical(round(as.numeric(as.character(pred)))))] <- 'doublet'
+    out[unclassified.ind][which(as.logical(round(as.numeric(as.character(pred)))))] <- 'doublet'
     
     
     ######################
     ### STEP 4: DEBRIS ###
     ######################
-    X <- s.tech[which(out == 'cell'), ]
+    unclassified.ind <- which(out == 'cell')
+    X <- s.tech[unclassified.ind, ]
     
     # approximate the label
     {
@@ -179,15 +188,16 @@ runSSSVM <- function(sce, datatype = c('Bagwell','Crompton')){
         }
         
         debrisclus <- which.max(c(m1,m2))
-        init <- g == debrisclus
+        init <- rep(FALSE, ncol(sce))
+        init[unclassified.ind] <- g == debrisclus
     } # init
     
     # pick "true" events (all "neighbors of neighbors" share the same label)
     {
-        mismatch <- matrix(init[knn$index[which(out=='cell'),]], ncol = 10)
+        mismatch <- matrix(init[knn$index], ncol = 10)
         mismatch[init, ] <- !mismatch[init, ]
         mismatch[is.na(mismatch)] <- FALSE
-        neighbormismatch <- matrix(rowMeans(mismatch)[knn$index[which(out=='cell'),]], ncol = 10)
+        neighbormismatch <- matrix(rowMeans(mismatch)[knn$index], ncol = 10)
         neighbormismatch[is.na(neighbormismatch)] <- 0
         #ind.label <- which(rowSums(neighbormismatch) == 0)
         ind.unlab <- which(rowSums(neighbormismatch) != 0)
@@ -199,17 +209,19 @@ runSSSVM <- function(sce, datatype = c('Bagwell','Crompton')){
         library(e1071)
         ytrain <- as.integer(init)
         ytrain[ind.unlab] <- NA
-        ssvm <- selfTraining(x=X, y = ytrain, x.inst = TRUE, learner = svm,
+        ssvm <- selfTraining(x = s.tech[unclassified.ind, ], 
+                             y = ytrain[unclassified.ind], 
+                             x.inst = TRUE, learner = svm,
                              learner.pars =list(kernel ="linear", scale = FALSE, probability = TRUE),
                              pred = function(m, x){
                                  attr(predict(m, x, probability = TRUE), "probabilities")
                              })
-        pred <- predict(ssvm, X)
+        pred <- predict(ssvm, s.tech[unclassified.ind, ])
     } # pred
     
     
     # update labels
-    out[which(out == 'cell')][which(as.logical(round(as.numeric(as.character(pred)))))] <- 'debris'
+    out[unclassified.ind][which(as.logical(round(as.numeric(as.character(pred)))))] <- 'debris'
     
     out <- factor(out, levels = c("cell","debris","doublet","bead","GDPzero"))
     
