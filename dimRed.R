@@ -1,6 +1,6 @@
 # do all the dimensionality reductions
 
-filenames <- system('ls ~/Desktop/Bagwell_data', intern=TRUE)
+filenames <- system('ls /rafalab/kstreet/cytof/Bagwell_data', intern=TRUE)
 
 for(fname in filenames){
     print(fname)
@@ -49,7 +49,7 @@ for(fname in filenames){
                 fitsne = fitsne,
                 meta = list(pca.sdev = pca$sdev))
     
-    saveRDS(out, file = paste0('~/Desktop/dimRed/DR_',base,'.rds'))
+    saveRDS(out, file = paste0('/rafalab/kstreet/cytof/dimRed/DR_',base,'.rds'))
     
 }
 
